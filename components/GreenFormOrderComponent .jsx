@@ -385,61 +385,8 @@ const CNICImagesTable = () => {
         </Text>
       ),
     },
-      {
-      title: (
-        <Space>
-          <IdcardOutlined />
-          <span>Customer Image</span>
-        </Space>
-      ),
-      dataIndex: "customerImage",
-      key: "customerImage",
-      width: 180,
-      render: (value) => {
-        return value ? (
-          <div style={{ justifyContent: "start" }}>
-            <Image
-              width={150}
-              height={150}
-              src={getImageUrl(value)}
-              style={{
-                borderRadius: "8px",
-                border: "2px solid #f0f0f0",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              }}
-              placeholder={
-                <div
-                  style={{
-                    width: 140,
-                    height: 90,
-                    background: "linear-gradient(45deg, #f0f0f0, #e8e8e8)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "start",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <Spin size="small" />
-                </div>
-              }
-              fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-            />
-            <Text
-              type="secondary"
-              style={{ fontSize: "12px", display: "block", marginTop: "4px" }}
-            >
-              Customer
-            </Text>
-          </div>
-        ) : (
-          <div style={{ textAlign: "center", padding: "20px" }}>
-            <IdcardOutlined style={{ fontSize: "24px", color: "#d9d9d9" }} />
-            <div style={{ color: "#999", fontSize: "12px" }}>No Image</div>
-          </div>
-        );
-      },
-    },
-    {
+        
+    { 
       title: (
         <Space>
           <IdcardOutlined />
@@ -493,6 +440,7 @@ const CNICImagesTable = () => {
         );
       },
     },
+    
   
     {
       title: (
@@ -539,6 +487,168 @@ const CNICImagesTable = () => {
               style={{ fontSize: "12px", display: "block", marginTop: "4px" }}
             >
               Back Side
+            </Text>
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <IdcardOutlined style={{ fontSize: "24px", color: "#d9d9d9" }} />
+            <div style={{ color: "#999", fontSize: "12px" }}>No Image</div>
+          </div>
+        );
+      },
+    },
+     {
+      title: (
+        <Space>
+          <IdcardOutlined />
+          <span>Customer Image</span>
+        </Space>
+      ),
+      dataIndex: "customerImage",
+      key: "customerImage",
+      width: 180,
+      render: (value) => {
+        return value ? (
+          <div style={{ justifyContent: "start" }}>
+            <Image
+              width={150}
+              height={150}
+              src={getImageUrl(value)}
+              style={{
+                borderRadius: "8px",
+                border: "2px solid #f0f0f0",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              }}
+              placeholder={
+                <div
+                  style={{
+                    width: 140,
+                    height: 90,
+                    background: "linear-gradient(45deg, #f0f0f0, #e8e8e8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "start",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <Spin size="small" />
+                </div>
+              }
+              fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+            />
+            <Text
+              type="secondary"
+              style={{ fontSize: "12px", display: "block", marginTop: "4px" }}
+            >
+              Customer
+            </Text>
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <IdcardOutlined style={{ fontSize: "24px", color: "#d9d9d9" }} />
+            <div style={{ color: "#999", fontSize: "12px" }}>No Image</div>
+          </div>
+        );
+      },
+    }, 
+       { 
+      title: (
+        <Space>
+          <IdcardOutlined />
+          <span>Signature</span>
+        </Space>
+      ),
+      dataIndex: "signature",
+      key: "signature",
+      width: 180,
+      render: (value) => {
+        return value ? (
+          <div style={{ justifyContent: "start"  }}>
+            <Image
+              width={150}
+              height={150}
+              src={getImageUrl(value)}
+              style={{
+                borderRadius: "8px",
+                border: "2px solid #f0f0f0",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              }}
+              placeholder={
+                <div
+                  style={{
+                    width: 140,
+                    height: 90,
+                    background: "linear-gradient(45deg, #f0f0f0, #e8e8e8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "start",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <Spin size="small" />
+                </div>
+              }
+              fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+            />
+            <Text
+              type="secondary"
+              style={{ fontSize: "12px", display: "block", marginTop: "4px" }}
+            >
+              Signature
+            </Text>
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <IdcardOutlined style={{ fontSize: "24px", color: "#d9d9d9" }} />
+            <div style={{ color: "#999", fontSize: "12px" }}>No Image</div>
+          </div>
+        );
+      },
+    }, 
+      { 
+      title: (
+        <Space>
+          <IdcardOutlined />
+          <span>Utility Bill</span>
+        </Space>
+      ),
+      dataIndex: "utilityBill",
+      key: "utilityBill",
+      width: 180,
+      render: (value) => {
+        return value ? (
+          <div style={{ justifyContent: "start"  }}>
+            <Image
+              width={150}
+              height={150}
+              src={getImageUrl(value)}
+              style={{
+                borderRadius: "8px",
+                border: "2px solid #f0f0f0",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              }}
+              placeholder={
+                <div
+                  style={{
+                    width: 140,
+                    height: 90,
+                    background: "linear-gradient(45deg, #f0f0f0, #e8e8e8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "start",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <Spin size="small" />
+                </div>
+              }
+              fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+            />
+            <Text
+              type="secondary"
+              style={{ fontSize: "12px", display: "block", marginTop: "4px" }}
+            >
+              Utility Bill
             </Text>
           </div>
         ) : (
