@@ -19,16 +19,18 @@ import {
   Tooltip,
   Empty,
   Progress,
+  Form,
 } from "antd";
 import {
   SearchOutlined,
-  ReloadOutlined,
   SafetyCertificateOutlined,
   UserOutlined,
   IdcardOutlined,
-  ClockCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
+  KeyOutlined,
+  EyeInvisibleOutlined,
+  EyeTwoTone,
 } from "@ant-design/icons";
 import axios from "axios";
 
@@ -40,15 +42,8 @@ const CNICImagesTable = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
   const [error, setError] = useState(null);
-  const [token, setToken] = useState(null);
-  const [tokenExpiry, setTokenExpiry] = useState(null);
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [token, setToken] = useState("");
   const [searchProgress, setSearchProgress] = useState(0);
-
-  const LOGIN_CREDENTIALS = {
-    username: "arif",
-    password: "qB(*&^%2aAi42907",
-  };
 
   // Function to construct image URL with key parameter
   const getImageUrl = (path) => {
@@ -63,130 +58,22 @@ const CNICImagesTable = () => {
     return `${baseUrl}?key=${key}`;
   };
 
-  // Login function to get new token
-  const login = async () => {
-    setLoginLoading(true);
-    try {
-      const response = await axios.post(
-        "https://boms.qistbazaar.pk/api/user/login",
-        LOGIN_CREDENTIALS
-      );
-
-      // Debug: Log the full response to understand the structure
-      console.log("Login Response:", response.data);
-      console.log("Response Status:", response.status);
-
-      // Check different possible response structures
-      if (
-        response.data.success === true ||
-        response.data.status === "success" ||
-        response.data.token
-      ) {
-        // Try different possible token field names
-        const newToken =
-          response.data.token ||
-          response.data.accessToken ||
-          response.data.access_token ||
-          response.data.data?.token;
-
-        if (!newToken) {
-          console.error("No token found in response:", response.data);
-          throw new Error("No token received from server");
-        }
-
-        setToken(newToken);
-
-        // Set token expiry (10 hours from now)
-        const expiryTime = new Date();
-        expiryTime.setHours(expiryTime.getHours() + 10);
-        setTokenExpiry(expiryTime);
-
-        // Store in localStorage for persistence
-        localStorage.setItem("apiToken", newToken);
-        localStorage.setItem("tokenExpiry", expiryTime.toISOString());
-
-        message.success("Authentication successful");
-        return newToken;
-      } else {
-        // Log the response to understand why it's failing
-        console.error("Login failed - Response data:", response.data);
-        throw new Error(
-          response.data.message ||
-            response.data.error ||
-            "Login failed - unexpected response structure"
-        );
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      console.error("Error response:", err.response?.data);
-
-      let errorMessage = "Authentication failed";
-
-      if (err.response?.data) {
-        errorMessage =
-          err.response.data.message ||
-          err.response.data.error ||
-          "Authentication failed";
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      message.error(`Authentication failed: ${errorMessage}`);
-      setError(`Authentication failed: ${errorMessage}`);
-      throw err;
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
-  // Check if token is valid (not expired)
-  const isTokenValid = useCallback(() => {
-    if (!token || !tokenExpiry) return false;
-    const now = new Date();
-    const expiry = new Date(tokenExpiry);
-    // Check if token expires in next 5 minutes (buffer time)
-    return expiry.getTime() - now.getTime() > 5 * 60 * 1000;
-  }, [token, tokenExpiry]);
-
-  // Get valid token (login if needed)
-  const getValidToken = async () => {
-    if (isTokenValid()) {
-      return token;
-    }
-
-    // Token is expired or doesn't exist, login again
-    return await login();
-  };
-
   // Load token from localStorage on component mount
   useEffect(() => {
     const savedToken = localStorage.getItem("apiToken");
-    const savedExpiry = localStorage.getItem("tokenExpiry");
-
-    if (savedToken && savedExpiry) {
-      const expiryDate = new Date(savedExpiry);
-      const now = new Date();
-
-      // Check if saved token is still valid
-      if (expiryDate.getTime() - now.getTime() > 5 * 60 * 1000) {
-        setToken(savedToken);
-        setTokenExpiry(expiryDate);
-      } else {
-        // Remove expired token
-        localStorage.removeItem("apiToken");
-        localStorage.removeItem("tokenExpiry");
-      }
+    if (savedToken) {
+      setToken(savedToken);
     }
   }, []);
 
-  // Auto-login on component mount if no valid token
+  // Save token to localStorage whenever it changes
   useEffect(() => {
-    if (!isTokenValid()) {
-      login().catch(() => {
-        // Error already handled in login function
-      });
+    if (token) {
+      localStorage.setItem("apiToken", token);
+    } else {
+      localStorage.removeItem("apiToken");
     }
-  }, [isTokenValid]);
+  }, [token]);
 
   const fetchSingleOrder = async (orderId, validToken) => {
     try {
@@ -220,7 +107,7 @@ const CNICImagesTable = () => {
         return {
           orderId: orderId,
           success: false,
-          error: "Authentication failed - token may be expired",
+          error: "Authentication failed - invalid or expired token",
         };
       }
 
@@ -238,15 +125,17 @@ const CNICImagesTable = () => {
       return;
     }
 
+    if (!token.trim()) {
+      message.warning("Please enter your authentication token");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setData([]);
     setSearchProgress(0);
 
     try {
-      // Get valid token before making API calls
-      const validToken = await getValidToken();
-
       // Split order IDs by comma, newline, or space and filter empty values
       const orderIdList = orderIds
         .split(/[,\n\s]+/)
@@ -261,38 +150,12 @@ const CNICImagesTable = () => {
 
       // Fetch all orders with progress tracking
       const promises = orderIdList.map(async (orderId, index) => {
-        const result = await fetchSingleOrder(orderId, validToken);
+        const result = await fetchSingleOrder(orderId, token);
         setSearchProgress(Math.round(((index + 1) / orderIdList.length) * 100));
         return result;
       });
 
       const results = await Promise.all(promises);
-
-      // Check if any requests failed due to token issues
-      const authFailures = results.filter(
-        (result) =>
-          !result.success && result.error.includes("Authentication failed")
-      );
-
-      if (authFailures.length > 0) {
-        // Try to refresh token and retry
-        message.warning("Token expired, refreshing and retrying...");
-        const newToken = await login();
-        const retryPromises = authFailures.map((failure) =>
-          fetchSingleOrder(failure.orderId, newToken)
-        );
-        const retryResults = await Promise.all(retryPromises);
-
-        // Replace failed results with retry results
-        retryResults.forEach((retryResult, index) => {
-          const originalIndex = results.findIndex(
-            (r) => r.orderId === authFailures[index].orderId
-          );
-          if (originalIndex !== -1) {
-            results[originalIndex] = retryResult;
-          }
-        });
-      }
 
       // Process results
       const successfulResults = results.filter((result) => result.success);
@@ -312,6 +175,17 @@ const CNICImagesTable = () => {
         message.warning(
           `Failed to load ${failedResults.length} orders: ${failedIds}`
         );
+
+        // Check if any failures are due to authentication issues
+        const authFailures = failedResults.filter((result) =>
+          result.error.includes("Authentication failed")
+        );
+
+        if (authFailures.length > 0) {
+          message.error(
+            "Authentication failed. Please check your token and try again."
+          );
+        }
       }
 
       if (successfulResults.length === 0) {
@@ -326,28 +200,36 @@ const CNICImagesTable = () => {
     }
   };
 
+  const clearToken = () => {
+    setToken("");
+    localStorage.removeItem("apiToken");
+    message.info("Token cleared");
+  };
+
   const columns = [
-  {
+    {
       title: (
         <Space>
           <IdcardOutlined />
           <span>Order ID</span>
         </Space>
       ),
-      dataIndex: 'orderID',
-      key: 'orderID',
+      dataIndex: "orderID",
+      key: "orderID",
       width: 120,
       render: (text) => (
-        <div style={{
-          background: 'linear-gradient(135deg, #1890ff, #096dd9)',
-          color: 'white',
-          padding: '6px 12px',
-          borderRadius: '6px',
-          fontWeight: 'bold',
-          textAlign: 'center',
-          fontSize: '13px',
-          boxShadow: '0 2px 4px rgba(24, 144, 255, 0.3)'
-        }}>
+        <div
+          style={{
+            background: "linear-gradient(135deg, #1890ff, #096dd9)",
+            color: "white",
+            padding: "6px 12px",
+            borderRadius: "6px",
+            fontWeight: "bold",
+            textAlign: "center",
+            fontSize: "13px",
+            boxShadow: "0 2px 4px rgba(24, 144, 255, 0.3)",
+          }}
+        >
           #{text}
         </div>
       ),
@@ -368,7 +250,6 @@ const CNICImagesTable = () => {
         </Text>
       ),
     },
-    
     {
       title: (
         <Space>
@@ -385,8 +266,7 @@ const CNICImagesTable = () => {
         </Text>
       ),
     },
-        
-    { 
+    {
       title: (
         <Space>
           <IdcardOutlined />
@@ -398,7 +278,7 @@ const CNICImagesTable = () => {
       width: 180,
       render: (value) => {
         return value ? (
-          <div style={{ justifyContent: "start"  }}>
+          <div style={{ justifyContent: "start" }}>
             <Image
               width={150}
               height={150}
@@ -440,8 +320,6 @@ const CNICImagesTable = () => {
         );
       },
     },
-    
-  
     {
       title: (
         <Space>
@@ -456,14 +334,13 @@ const CNICImagesTable = () => {
         return value ? (
           <div style={{ justifyContent: "start" }}>
             <Image
-               width={150}
+              width={150}
               height={150}
               src={getImageUrl(value)}
               style={{
                 borderRadius: "8px",
                 border: "2px solid #f0f0f0",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                
               }}
               placeholder={
                 <div
@@ -497,7 +374,7 @@ const CNICImagesTable = () => {
         );
       },
     },
-     {
+    {
       title: (
         <Space>
           <IdcardOutlined />
@@ -550,8 +427,8 @@ const CNICImagesTable = () => {
           </div>
         );
       },
-    }, 
-       { 
+    },
+    {
       title: (
         <Space>
           <IdcardOutlined />
@@ -563,7 +440,7 @@ const CNICImagesTable = () => {
       width: 180,
       render: (value) => {
         return value ? (
-          <div style={{ justifyContent: "start"  }}>
+          <div style={{ justifyContent: "start" }}>
             <Image
               width={150}
               height={150}
@@ -604,8 +481,8 @@ const CNICImagesTable = () => {
           </div>
         );
       },
-    }, 
-      { 
+    },
+    {
       title: (
         <Space>
           <IdcardOutlined />
@@ -617,7 +494,7 @@ const CNICImagesTable = () => {
       width: 180,
       render: (value) => {
         return value ? (
-          <div style={{ justifyContent: "start"  }}>
+          <div style={{ justifyContent: "start" }}>
             <Image
               width={150}
               height={150}
@@ -662,39 +539,17 @@ const CNICImagesTable = () => {
   ];
 
   const getTokenStatus = () => {
-    if (!token)
+    if (!token.trim()) {
       return {
         status: "error",
-        text: "No token",
+        text: "No token provided",
         icon: <ExclamationCircleOutlined />,
-      };
-    if (!isTokenValid())
-      return {
-        status: "warning",
-        text: "Token expired",
-        icon: <ClockCircleOutlined />,
-      };
-
-    const now = new Date();
-    const expiry = new Date(tokenExpiry);
-    const hoursLeft = Math.floor(
-      (expiry.getTime() - now.getTime()) / (1000 * 60 * 60)
-    );
-    const minutesLeft = Math.floor(
-      ((expiry.getTime() - now.getTime()) % (1000 * 60 * 60)) / (1000 * 60)
-    );
-
-    if (hoursLeft < 1) {
-      return {
-        status: "warning",
-        text: `Expires in ${minutesLeft}m`,
-        icon: <ClockCircleOutlined />,
       };
     }
 
     return {
       status: "success",
-      text: `Valid for ${hoursLeft}h ${minutesLeft}m`,
+      text: "Token ready",
       icon: <CheckCircleOutlined />,
     };
   };
@@ -723,7 +578,11 @@ const CNICImagesTable = () => {
           boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
           border: "none",
         }}
-        bodyStyle={{ padding: "32px" }}
+        styles={{
+          body: {
+            padding: "32px",
+          },
+        }}
       >
         {/* Header Section */}
         <div style={{ marginBottom: "32px" }}>
@@ -740,44 +599,91 @@ const CNICImagesTable = () => {
                   GreenForm Data Verification
                 </Title>
                 <Text type="secondary" style={{ fontSize: "16px" }}>
-                  Bulk lookup and verification of Customer
+                  Bulk lookup and verification of Customer Data
                 </Text>
               </Space>
             </Col>
             <Col>
-              <Space size="middle">
-                <Alert
-                  message={tokenStatus.text}
-                  type={tokenStatus.status}
-                  icon={tokenStatus.icon}
-                  showIcon
-                  style={{
-                    borderRadius: "8px",
-                    border: "none",
-                    fontWeight: 500,
-                  }}
-                />
-                <Tooltip title="Refresh authentication token">
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={login}
-                    loading={loginLoading}
-                    disabled={loginLoading}
-                    style={{
-                      borderRadius: "8px",
-                      height: "40px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Refresh Token
-                  </Button>
-                </Tooltip>
-              </Space>
+              <Alert
+                message={tokenStatus.text}
+                type={tokenStatus.status}
+                icon={tokenStatus.icon}
+                showIcon
+                style={{
+                  borderRadius: "8px",
+                  border: "none",
+                  fontWeight: 500,
+                }}
+              />
             </Col>
           </Row>
         </div>
 
         <Divider style={{ margin: "0 0 32px 0" }} />
+
+        {/* Token Input Section */}
+        <Card
+          title={
+            <Space>
+              <KeyOutlined style={{ color: "#1890ff" }} />
+              <span>Authentication Token</span>
+            </Space>
+          }
+          style={{
+            marginBottom: "24px",
+            borderRadius: "12px",
+            border: "1px solid #f0f0f0",
+          }}
+          styles={{
+            header: {
+              borderBottom: "1px solid #f0f0f0",
+              borderRadius: "12px 12px 0 0",
+            },
+          }}
+        >
+          <Row gutter={[16, 16]}>
+            <Col span={20}>
+              <Input.Password
+                placeholder="Enter your authentication token from Postman..."
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                size="large"
+                iconRender={(visible) =>
+                  visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+                }
+                style={{
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                }}
+              />
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: "12px",
+                  marginTop: "8px",
+                  display: "block",
+                }}
+              >
+                🔐 Paste the token you copied from your Postman API response
+              </Text>
+            </Col>
+            <Col span={4}>
+              <Button
+                danger
+                onClick={clearToken}
+                disabled={!token.trim()}
+                size="large"
+                style={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  fontWeight: 500,
+                }}
+              >
+                Clear Token
+              </Button>
+            </Col>
+          </Row>
+        </Card>
 
         {/* Search Section */}
         <Card
@@ -843,7 +749,7 @@ const CNICImagesTable = () => {
                   type="primary"
                   icon={<SearchOutlined />}
                   onClick={fetchBulkData}
-                  disabled={!orderIds.trim() || loading || !token}
+                  disabled={!orderIds.trim() || loading || !token.trim()}
                   size="large"
                   style={{
                     flex: 1,
@@ -954,8 +860,8 @@ const CNICImagesTable = () => {
                       No search results yet
                     </Text>
                     <Text type="secondary">
-                      Enter Order IDs above and click "Search All Orders" to
-                      begin
+                      Enter your authentication token and Order IDs, then click
+                      "Search All Orders" to begin
                     </Text>
                   </Space>
                 }
