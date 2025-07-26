@@ -32,3 +32,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.table-row-light {
+          background-color: #ffffff;
+        }
+        .table-row-dark {
+          background-color: #fafafa;
+        }
+        .ant-table-thead > tr > th {
+          background: linear-gradient(135deg, #f0f2f5, #e6f7ff);
+          border-bottom: 2px solid #1890ff;
+          font-weight: 600;
+        }
+        .ant-table-tbody > tr:hover > td {
+          background-color: #e6f7ff !important;
+        }
+        .ant-image-img {
+          transition: transform 0.3s ease;
+        }
+        .ant-image-img:hover {
+          transform: scale(1.05);
+        }
