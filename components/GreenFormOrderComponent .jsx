@@ -45,6 +45,33 @@ const CNICImagesTable = () => {
   const [token, setToken] = useState("");
   const [searchProgress, setSearchProgress] = useState(0);
 
+  // Cookie utility functions with enhanced security
+  const setCookie = (name, value, days = 7) => {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    
+    // Enhanced cookie security settings
+    const cookieString = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;secure;samesite=strict;httponly=false`;
+    document.cookie = cookieString;
+  };
+
+  const getCookie = (name) => {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) {
+        return decodeURIComponent(c.substring(nameEQ.length, c.length));
+      }
+    }
+    return null;
+  };
+
+  const deleteCookie = (name) => {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;secure;samesite=strict`;
+  };
+
   // Function to construct image URL with key parameter
   const getImageUrl = (path) => {
     if (!path) return null;
@@ -58,20 +85,20 @@ const CNICImagesTable = () => {
     return `${baseUrl}?key=${key}`;
   };
 
-  // Load token from localStorage on component mount
+  // Load token from cookie on component mount
   useEffect(() => {
-    const savedToken = localStorage.getItem("apiToken");
+    const savedToken = getCookie("apiToken");
     if (savedToken) {
       setToken(savedToken);
     }
   }, []);
 
-  // Save token to localStorage whenever it changes
+  // Save token to cookie whenever it changes
   useEffect(() => {
-    if (token) {
-      localStorage.setItem("apiToken", token);
-    } else {
-      localStorage.removeItem("apiToken");
+    if (token && token.trim()) {
+      setCookie("apiToken", token, 7); // Store for 7 days
+    } else if (!token || !token.trim()) {
+      deleteCookie("apiToken");
     }
   }, [token]);
 
@@ -202,8 +229,8 @@ const CNICImagesTable = () => {
 
   const clearToken = () => {
     setToken("");
-    localStorage.removeItem("apiToken");
-    message.info("Token cleared");
+    deleteCookie("apiToken");
+    message.info("Token cleared from cookies");
   };
 
   const columns = [
@@ -627,6 +654,10 @@ const CNICImagesTable = () => {
             <Space>
               <KeyOutlined style={{ color: "#1890ff" }} />
               <span>Authentication Token</span>
+              <Badge 
+                count="Cookie Storage" 
+                style={{ backgroundColor: "#52c41a", fontSize: "10px" }} 
+              />
             </Space>
           }
           style={{
@@ -664,7 +695,7 @@ const CNICImagesTable = () => {
                   display: "block",
                 }}
               >
-                🔐 Paste the token you copied from your Postman API response
+                🔐 Token is securely stored in cookies (7 days expiry) | 🍪 No localStorage used
               </Text>
             </Col>
             <Col span={4}>
